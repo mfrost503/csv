@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link rel="icon" type="image/x-icon" href="/themes/thephpleague/thephpleague.github.com/img/favicon.ico" />
+                <link rel="apple-touch-icon-precomposed" href="/themes/thephpleague/thephpleague.github.com/img/apple-touch-icon-precomposed.png">
+                <title>Filtering - CSV</title>
+                <meta name="description" content="Working with CSV can often be much more difficult than you expect, with different types of delimiter and complicated structures. This makes it easy to read and write almost anything.">
+                <link rel="stylesheet" href="/themes/thephpleague/thephpleague.github.com/css/all.css">
+    </head>
+<body>
+
+<section class="all_packages">
+    <a href="http://thephpleague.com/">
+        <img src="/themes/thephpleague/thephpleague.github.com/img/loep_logo.png" width="195" height="200" alt="The League of Extraordinary Packages">
+    </a>
+    <h2>Our Packages:</h2>
+    <ul>
+    </ul>
+</section>
+
+<header>
+    <a class="logo" href="/">
+                <span class="name">CSV</span>
+        <span class="tagline">CSV data manipulation made easy in PHP.</span>
+    </a>
+    <a href="http://thephpleague.com/" class="league">
+        Presented by The League of Extraordinary Packages
+    </a>
+</header>
+
+<input type="checkbox" id="menu">
+<label for="menu" onclick>
+    <div class="closed">&#9776; Menu</div>
+    <div class="open">&#9776; Hide Menu</div>
+</label>
+
+<main>
+    <menu>
+                    <h2>Getting Started</h2>
+            <ul>
+                                    <li >
+                        <a href="/">Introduction</a>
+                    </li>
+                                    <li >
+                        <a href="/examples/">Examples</a>
+                    </li>
+                                    <li >
+                        <a href="/installation/">Installation</a>
+                    </li>
+                            </ul>
+                    <h2>The API</h2>
+            <ul>
+                                    <li >
+                        <a href="/overview/">Overview</a>
+                    </li>
+                                    <li >
+                        <a href="/outputting/">Outputting</a>
+                    </li>
+                                    <li >
+                        <a href="/reading/">Extracting</a>
+                    </li>
+                                    <li >
+                        <a href="/inserting/">Inserting</a>
+                    </li>
+                                    <li class="selected">
+                        <a href="/filtering/">Filtering</a>
+                    </li>
+                            </ul>
+                    <h2>Upgrading Guide</h2>
+            <ul>
+                                    <li >
+                        <a href="/upgrading/">Introduction</a>
+                    </li>
+                                    <li >
+                        <a href="/upgrading/6.0/">5.x to 6.x</a>
+                    </li>
+                            </ul>
+            </menu>
+    <article>
+        <h1>Stream Filtering</h1>
+
+<p><em>available since version 6.0</em></p>
+
+<p>To ease performing operations on the CSV as it is being read from or written to, the <code>Reader</code> and <code>Writer</code> classes now include methods to ease PHP stream filtering usage.</p>
+
+<h2>Stream Filter API</h2>
+
+<p>While in PHP the stream filter mode is attached to its associated filter, in <code>League\Csv</code> the filter mode is attached to the CSV object. This means that when you change the filter mode, you also clear all previously attached stream filters.</p>
+
+<p>To be able to use the stream filtering mechanism you need to:</p>
+
+<ul>
+<li>validate that the stream filter API is active;</li>
+<li>set the class filtering mode;</li>
+<li>attached your stream filters to the CSV object;</li>
+</ul>
+
+<h3>Detecting if the API is active</h3>
+
+<p>To be sure that the Stream Filter API is available it is recommend to use the method <code>isActiveStreamFilter</code>, which returns <code>true</code> if you can safely use the API:</p>
+
+<pre><code class="language-php">use \League\Csv\Reader;
+use \League\Csv\Writer;
+
+$reader = Reader::createFromPath('/path/to/my/file.csv');
+$reader-&gt;isActiveStreamFilter(); //return true
+
+$writer = new Writer(new SplTempFileObject);
+$writer-&gt;isActiveStreamFilter(); //return false the API can not be use
+</code></pre>
+
+<p class="message-warning"><strong>Warning:</strong> A <code>LogicException</code> exception may be thrown if you try to use the API under certain circumstances without prior validation using <code>isActiveStreamFilter</code></p>
+
+<h3>Setting and getting the object stream filter mode</h3>
+
+<p>The stream filter mode property is set using PHP internal stream filter constant <code>STREAM_FILTER_*</code>, but unlike <code>fopen</code>, the mode is attached to the object and not to a stream filter.</p>
+
+<ul>
+<li><code>setStreamFilterMode($mode)</code>: set the object stream filter mode <strong>and</strong> remove all previously attached stream filters;</li>
+<li><code>getStreamFilterMode()</code>: returns the current stream filter mode;</li>
+</ul>
+
+<p>By default:</p>
+
+<ul>
+<li>when using the <code>Reader</code> class the property is equal to <code>STREAM_FILTER_READ</code>;</li>
+<li>when using the <code>Writer</code> class the property is equal to <code>STREAM_FILTER_WRITE</code>;</li>
+<li>If you instantiate the class using a PHP filter meta wrapper (ie: <code>php://filter/</code>), the mode will be the one used by the meta wrapper;</li>
+</ul>
+
+<pre><code class="language-php">use \League\Csv\Reader;
+
+$reader = Reader::createFromPath('/path/to/my/file.csv');
+if ($reader-&gt;isActiveStreamFilter()) {
+    $current_mode = $reader-&gt;getStreamFilterMode(); //returns STREAM_FILTER_READ
+    $reader-&gt;setStreamFilterMode(STREAM_FILTER_WRITE);
+    //this means that any filter you will set will have no effect when reading the CSV
+    //all previously attached stream filters if they existed have been removed
+    $current_mode = $reader-&gt;getStreamFilterMode(); //returns STREAM_FILTER_WRITE   
+}
+</code></pre>
+
+<h3>Managing Stream filter</h3>
+
+<p>To manage your registered stream filter collection you can use the following methods</p>
+
+<ul>
+<li><code>appendStreamFilter($filtername)</code> : adds a stream filter at the bottom of the collection</li>
+<li><code>prependStreamFilter($filtername)</code> : adds a stream filter at the top of the collection</li>
+<li><code>removeStreamFilter($filtername)</code> : removes a stream filter from the collection</li>
+<li><code>hasStreamFilter($filtername)</code> : check the presence of a stream filter in the collection</li>
+<li><code>clearStreamFilter()</code>: removes all the currently attached filters.</li>
+</ul>
+
+<p>The <code>$filtername</code> parameter is a string that represents the filter as registered using php <code>stream_filter_register</code> function or one of PHP internal stream filter.</p>
+
+<p>Since the stream filters are attached to the CSV object:</p>
+
+<ul>
+<li>The filters will not be cleared between method calls unless specified</li>
+<li>The filters will not be copied to the new class when using <code>newReader</code> or <code>newWriter</code> methods</li>
+</ul>
+
+<p>The filters are automatically applied when the stream filter mode matches the method you are using.</p>
+
+<p>See below an example using <code>League\Csv\Reader</code> to illustrate:</p>
+
+<pre><code class="language-php">use \League\Csv\Reader;
+
+stream_filter_register('convert.utf8decode', 'MyLib\Transcode');
+// 'MyLib\Transcode' is a class that extends PHP's php_user_filter class
+
+$reader = Reader::createFromPath('/path/to/my/chinese.csv');
+if ($reader-&gt;isActiveStreamFilter()) {
+    $reader-&gt;appendStreamFilter('string.toupper');
+    $reader-&gt;appendStreamFilter('string.rot13');
+    $reader-&gt;prependStreamFilter('convert.utf8decode');
+    $reader-&gt;removeStreamFilter('string.rot13');
+}
+foreach ($reader as $row) {
+    // each row cell now contains strings that have been:
+    // first UTF8 decoded and then uppercased
+}
+</code></pre>
+
+<h2>Limitations</h2>
+
+<h3>Writer class on Editing Mode</h3>
+
+<p class="message-warning"><strong>Warning:</strong> To preserve file cursor position during editing the stream filter mode and the stream filter collection are frozen after the first insert is made using any of the <code>insert*</code> method. Any attempt to modify the stream filter status will fail silently.</p>
+
+<pre><code class="language-php">use League\Csv\Writer;
+
+$writer = Writer::createFromPath('/path/to/my/file.csv');
+$writer-&gt;setDelimiter(',');
+if ($writer-&gt;isActiveStreamFilter()) {
+    $writer-&gt;addStreamFilter('string.toupper');
+}
+//first insert -&gt; file.csv will contain uppercased data.
+$writer-&gt;insertOne(['bill', 'gates', 'bill@microsoft.com']);
+if ($writer-&gt;isActiveStreamFilter()) {
+    //isActiveStreamFilter returns false so this code is never executed
+    $writer-&gt;addStreamFilter('string.rot13');
+}
+//this filter is added to the collection but will never be applied!!
+$writer-&gt;addStreamFilter('string.rot13');
+//The inserted array will only be uppercased!!
+$writer-&gt;insertOne('steve,job,job@apple.com');
+
+echo $writer; //the newly added rows are all uppercased
+</code></pre>
+
+<h2>Example</h2>
+
+<p>Please review <a href="https://github.com/thephpleague/csv/blob/master/examples/stream.php" target="_blank">the stream filtering example</a> and the attached <a href="https://github.com/thephpleague/csv/blob/master/examples/lib/FilterTranscode.php" target="_blank">FilterTranscode</a> Class to understand how to use the filtering mechanism to convert a CSV into another charset.</p>
+
+<p>The <code>FilterTranscode</code> class is not attached to the Library because converting you CSV may depend on the extension you choose, in PHP you can use the following extensions :</p>
+
+<ul>
+<li><a href="http://php.net/mbstring" target="_blank">The mbstring</a></li>
+<li><a href="http://php.net/iconv" target="_blank">The iconv</a></li>
+<li><a href="http://php.net/intl" target="_blank">The intl</a></li>
+</ul>
+    </article>
+</main>
+
+<footer>
+    <span>&copy; Copyright The League of Extraordinary Packages.</span>
+    <span>Site design by <a href="http://reinink.ca">Jonathan Reinink</a>.</span>
+    <span>Powered by <a href="https://sculpin.io">Sculpin</a>.</span>
+</footer>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="/themes/thephpleague/thephpleague.github.com/js/scripts.js"></script>
+<script src="/themes/thephpleague/thephpleague.github.com/js/prism.js"></script>
+
+    <script>
+        (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
+        function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
+        e=o.createElement(i);r=o.getElementsByTagName(i)[0];
+        e.src='//www.google-analytics.com/analytics.js';
+        r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
+        ga('create','UA-46050814-6');ga('send','pageview');
+    </script>
+
+</body>
+</html>

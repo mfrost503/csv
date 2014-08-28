@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link rel="icon" type="image/x-icon" href="/themes/thephpleague/thephpleague.github.com/img/favicon.ico" />
+                <link rel="apple-touch-icon-precomposed" href="/themes/thephpleague/thephpleague.github.com/img/apple-touch-icon-precomposed.png">
+                <title>Upgrading from 5.x to 6.x - CSV</title>
+                <meta name="description" content="Working with CSV can often be much more difficult than you expect, with different types of delimiter and complicated structures. This makes it easy to read and write almost anything.">
+                <link rel="stylesheet" href="/themes/thephpleague/thephpleague.github.com/css/all.css">
+    </head>
+<body>
+
+<section class="all_packages">
+    <a href="http://thephpleague.com/">
+        <img src="/themes/thephpleague/thephpleague.github.com/img/loep_logo.png" width="195" height="200" alt="The League of Extraordinary Packages">
+    </a>
+    <h2>Our Packages:</h2>
+    <ul>
+    </ul>
+</section>
+
+<header>
+    <a class="logo" href="/">
+                <span class="name">CSV</span>
+        <span class="tagline">CSV data manipulation made easy in PHP.</span>
+    </a>
+    <a href="http://thephpleague.com/" class="league">
+        Presented by The League of Extraordinary Packages
+    </a>
+</header>
+
+<input type="checkbox" id="menu">
+<label for="menu" onclick>
+    <div class="closed">&#9776; Menu</div>
+    <div class="open">&#9776; Hide Menu</div>
+</label>
+
+<main>
+    <menu>
+                    <h2>Getting Started</h2>
+            <ul>
+                                    <li >
+                        <a href="/">Introduction</a>
+                    </li>
+                                    <li >
+                        <a href="/examples/">Examples</a>
+                    </li>
+                                    <li >
+                        <a href="/installation/">Installation</a>
+                    </li>
+                            </ul>
+                    <h2>The API</h2>
+            <ul>
+                                    <li >
+                        <a href="/overview/">Overview</a>
+                    </li>
+                                    <li >
+                        <a href="/outputting/">Outputting</a>
+                    </li>
+                                    <li >
+                        <a href="/reading/">Extracting</a>
+                    </li>
+                                    <li >
+                        <a href="/inserting/">Inserting</a>
+                    </li>
+                                    <li >
+                        <a href="/filtering/">Filtering</a>
+                    </li>
+                            </ul>
+                    <h2>Upgrading Guide</h2>
+            <ul>
+                                    <li >
+                        <a href="/upgrading/">Introduction</a>
+                    </li>
+                                    <li class="selected">
+                        <a href="/upgrading/6.0/">5.x to 6.x</a>
+                    </li>
+                            </ul>
+            </menu>
+    <article>
+        <h1>Upgrading from 5.x to 6.x</h1>
+
+<h2>Installation</h2>
+
+<p>If you are using composer then you should update the require section of your <code>composer.json</code> file.</p>
+
+<pre><code class="language-javascript">{
+    "require": {
+        "league/csv": "6.*"
+    }
+}
+</code></pre>
+
+<h2>New Features</h2>
+
+<h3>Stream Filter API</h3>
+
+<p>The Stream Filter API is introduced. Please <a href="/filtering/">refer to the documentation</a> for more information</p>
+
+<h2>Added Methods</h2>
+
+<h3>Named Constructors</h3>
+
+<p>The new preferred way to instantiate a CSV object is to use the <a href="/overview/#instantiation">named constructors</a>:</p>
+
+<p>Two new named constructors are added to complement the already present <code>createFromString</code> method.</p>
+
+<ul>
+<li><code>createFromPath</code>;</li>
+<li><code>createFromFileObject</code>;</li>
+</ul>
+
+<p>You can still use the class constructor for backward compatibility.</p>
+
+<h2>Backward Incompatible Changes</h2>
+
+<h3>Detecting CSV Delimiters</h3>
+
+<p>The <code>detectDelimiter</code> method is removed and replaced by the <code>detectDelimiterList</code> method.</p>
+
+<p>The difference between both methods is that the latter always return an <code>array</code> as the former was throwing <code>RuntimeException</code> when multiple delimiters where found (<em>ie.</em>: the CSV was inconsistent)</p>
+
+<p>Old code:</p>
+
+<pre><code class="language-php">use League\Csv\Reader;
+
+$reader = new Reader('/path/to/your/csv/file.csv');
+
+try {
+    $delimiter = $reader-&gt;detectDelimiter(10, [' ', '|']);
+    if (is_null($delimiter)) {
+        //no delimiter found
+    }
+} catch(RuntimeException $e) {
+    //inconsistent CSV the found delimiters were given in $e-&gt;getMessage();
+}
+
+</code></pre>
+
+<p>New code:</p>
+
+<pre><code class="language-php">use League\Csv\Reader;
+
+$reader = Reader::createFromPath('/path/to/your/csv/file.csv');
+
+$delimiters_list = $reader-&gt;detectDelimiterList(10, [' ', '|']);
+if (! $delimiters_list) {
+    //no delimiter found
+} elseif (1 == count($delimiters)) {
+    $delimiter = $delimiters_list[0]; // the found delimiter
+} else {
+    //inconsistent CSV 
+    var_dump($delimiters_list); // all the delimiters found
+}
+
+</code></pre>
+
+<h3>Transcoding Charset Property</h3>
+
+<p><code>setEncoding</code>/<code>getEnconding</code>: the <code>$encondingFrom</code> property setter and getter are renamed <code>setEncodingFrom</code>/<code>getEncondingFrom</code> to avoid any ambiguity.</p>
+
+<p><strong>The library always assume that the output is in <code>UTF-8</code></strong> so when transcoding your CSV you should always transcode from the <code>$encondingFrom</code> charset into an UTF-8 compatible charset.</p>
+
+<p>You need to upgrade your code accordingly.</p>
+
+<p>Old code:</p>
+
+<pre><code class="language-php">use League\Csv\Reader;
+
+$reader = new Reader('/path/to/your/csv/file.csv');
+$reader-&gt;setEncoding('SJIS');
+$charset = $reader-&gt;getEncoding(); //returns 'SJIS'
+$reader-&gt;output();
+
+</code></pre>
+
+<p>New code:</p>
+
+<pre><code class="language-php">use League\Csv\Reader;
+
+$reader = new Reader('/path/to/your/csv/file.csv');
+$reader-&gt;setEncodingFrom('SJIS');
+$charset = $reader-&gt;getEncodingFrom(); //returns 'SJIS'
+$reader-&gt;output();
+
+</code></pre>
+
+<h3>Creating New Instances From Existing CSV Objects</h3>
+
+<p><code>League\Csv\Writer::getReader</code> and <code>League\Csv\Reader::getWriter</code> are removed.</p>
+
+<p>The new methods <code>newWriter</code> and <code>newReader</code> are available on <strong>both</strong> classes. This means you can create a CSV reader and/or a CSV writer object from any given object.</p>
+
+<ul>
+<li><code>newWriter</code> behaves exactly like <code>getWriter</code>;</li>
+<li><code>newReader</code> behaves exactly like <code>getReader</code>;</li>
+</ul>
+
+<p>Old code:</p>
+
+<pre><code class="language-php">use League\Csv\Reader;
+
+$reader = new Reader('/path/to/your/csv/file.csv');
+$writer = $reader-&gt;getWriter('a+');
+
+$another_reader = $writer-&gt;getReader();
+</code></pre>
+
+<p>New code:</p>
+
+<pre><code class="language-php">use League\Csv\Reader;
+
+$reader = Reader::createFromPath('/path/to/your/csv/file.csv');
+$writer = $reader-&gt;newWriter('a+');
+
+$another_writer = $writer-&gt;newWriter('rb+');
+$another_reader1 = $writer-&gt;newReader();
+$another_reader2 = $reader-&gt;newReader();
+</code></pre>
+
+<h2>Already Deprecated Methods in 5.5, Removed in 6.0</h2>
+
+<ul>
+<li><code>setSortBy</code>: the method was already deprecated since version 5.2 and replaced by <code>addSortBy</code>.</li>
+<li><code>setFilter</code>: the method was already deprecated since version 5.1 and replaced by <code>addFilter</code>.</li>
+</ul>
+    </article>
+</main>
+
+<footer>
+    <span>&copy; Copyright The League of Extraordinary Packages.</span>
+    <span>Site design by <a href="http://reinink.ca">Jonathan Reinink</a>.</span>
+    <span>Powered by <a href="https://sculpin.io">Sculpin</a>.</span>
+</footer>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="/themes/thephpleague/thephpleague.github.com/js/scripts.js"></script>
+<script src="/themes/thephpleague/thephpleague.github.com/js/prism.js"></script>
+
+    <script>
+        (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
+        function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
+        e=o.createElement(i);r=o.getElementsByTagName(i)[0];
+        e.src='//www.google-analytics.com/analytics.js';
+        r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
+        ga('create','UA-46050814-6');ga('send','pageview');
+    </script>
+
+</body>
+</html>

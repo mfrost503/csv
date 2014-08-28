@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link rel="icon" type="image/x-icon" href="/themes/thephpleague/thephpleague.github.com/img/favicon.ico" />
+                <link rel="apple-touch-icon-precomposed" href="/themes/thephpleague/thephpleague.github.com/img/apple-touch-icon-precomposed.png">
+                <title>Outputting - CSV</title>
+                <meta name="description" content="Working with CSV can often be much more difficult than you expect, with different types of delimiter and complicated structures. This makes it easy to read and write almost anything.">
+                <link rel="stylesheet" href="/themes/thephpleague/thephpleague.github.com/css/all.css">
+    </head>
+<body>
+
+<section class="all_packages">
+    <a href="http://thephpleague.com/">
+        <img src="/themes/thephpleague/thephpleague.github.com/img/loep_logo.png" width="195" height="200" alt="The League of Extraordinary Packages">
+    </a>
+    <h2>Our Packages:</h2>
+    <ul>
+    </ul>
+</section>
+
+<header>
+    <a class="logo" href="/">
+                <span class="name">CSV</span>
+        <span class="tagline">CSV data manipulation made easy in PHP.</span>
+    </a>
+    <a href="http://thephpleague.com/" class="league">
+        Presented by The League of Extraordinary Packages
+    </a>
+</header>
+
+<input type="checkbox" id="menu">
+<label for="menu" onclick>
+    <div class="closed">&#9776; Menu</div>
+    <div class="open">&#9776; Hide Menu</div>
+</label>
+
+<main>
+    <menu>
+                    <h2>Getting Started</h2>
+            <ul>
+                                    <li >
+                        <a href="/">Introduction</a>
+                    </li>
+                                    <li >
+                        <a href="/examples/">Examples</a>
+                    </li>
+                                    <li >
+                        <a href="/installation/">Installation</a>
+                    </li>
+                            </ul>
+                    <h2>The API</h2>
+            <ul>
+                                    <li >
+                        <a href="/overview/">Overview</a>
+                    </li>
+                                    <li class="selected">
+                        <a href="/outputting/">Outputting</a>
+                    </li>
+                                    <li >
+                        <a href="/reading/">Extracting</a>
+                    </li>
+                                    <li >
+                        <a href="/inserting/">Inserting</a>
+                    </li>
+                                    <li >
+                        <a href="/filtering/">Filtering</a>
+                    </li>
+                            </ul>
+                    <h2>Upgrading Guide</h2>
+            <ul>
+                                    <li >
+                        <a href="/upgrading/">Introduction</a>
+                    </li>
+                                    <li >
+                        <a href="/upgrading/6.0/">5.x to 6.x</a>
+                    </li>
+                            </ul>
+            </menu>
+    <article>
+        <h1>Outputting &amp; Downloads</h1>
+
+<p>With both <code>Reader</code> and <code>Writer</code> you can output the data that has been read or 
+generated in a uniform way.</p>
+
+<p class="message-info"><strong>Tips:</strong> Even though you can use the following methods with the <code>League\Csv\Writer</code>. It is recommended to do so with a <code>League\Csv\Reader</code> class to avoid loosing the file cursor position and get unexpected results when inserting data.</p>
+
+<h2>Iterate over the CSV</h2>
+
+<p>Using the foreach construct:</p>
+
+<pre><code class="language-php">foreach ($reader as $row) {
+    //do something meaningfull here with $row !!
+    //$row is an array where each item represent a CSV data cell
+}
+</code></pre>
+
+<h2>Transcoding the CSV</h2>
+
+<p>The recommended way to transcode your CSV in a UTF-8 compatible charset is to use the <a href="/filtering/">library stream filtering mechanism</a>. When this is not possible you can fallback to using the <code>setEncondingFrom</code> and <code>getEncondingFrom</code> methods.</p>
+
+<p class="message-warning"><strong>BC Break:</strong> <code>setEnconding</code> and <code>getEnconding</code> methods have been renamed <code>setEncondingFrom</code> and <code>getEncondingFrom</code> to remove any ambiguity</p>
+
+<pre><code class="language-php">$reader = Reader::createFromFileObject(new SplFileObject('/path/to/bengali.csv'));
+$reader-&gt;setEncodingFrom('iso-8859-15');
+echo $reader; //the CSV will be transcoded from iso-8859-15 to UTF-8;
+</code></pre>
+
+<p>When using the outputting methods and the <code>json_encode</code> function, the data is internally converted into UTF-8 if <code>setEncodingFrom</code> is set to anything other than <code>UTF-8</code>.</p>
+
+<h2>Show the CSV content</h2>
+
+<p>Use the echo construct on the instantiated object or use the <code>__toString</code> method.</p>
+
+<pre><code class="language-php">echo $reader;
+// or
+echo $reader-&gt;__toString();
+</code></pre>
+
+<h2>Convert to XML</h2>
+
+<p>Use the toXML method to convert the CSV data into a <code>DomDocument</code> object. This
+method accepts 3 optionals arguments <code>$root_name</code>, <code>$row_name</code> and <code>$cell_name</code> 
+to help you customize the XML tree.</p>
+
+<p>By default:</p>
+
+<pre><code class="language-php">$root_name = 'csv'
+$row_name = 'row'
+$cell_name = 'cell'
+</code></pre>
+
+<pre><code class="language-php">$dom = $reader-&gt;toXML('data', 'item', 'cell');
+</code></pre>
+
+<h2>Convert to HTML table</h2>
+
+<p>Use the <code>toHTML</code> method to format the CSV data into an HTML table. This method 
+accepts an optional argument <code>$classname</code> to help you customize the table 
+rendering, by defaut the classname given to the table is <code>table-csv-data</code>.</p>
+
+<pre><code class="language-php">echo $reader-&gt;toHTML('table table-bordered table-hover');
+</code></pre>
+
+<h2>Convert to JSON</h2>
+
+<p>Use the <code>json_encode</code> function directly on the instantiated object.</p>
+
+<pre><code class="language-php">echo json_encode($reader);
+</code></pre>
+
+<h2>Force a file download</h2>
+
+<p>If you only wish to make your CSV downloadable just use the output method to 
+return to the output buffer the CSV content.</p>
+
+<pre><code class="language-php">header('Content-Type: text/csv; charset=UTF-8');
+header('Content-Disposition: attachment; filename="name-for-your-file.csv"');
+$reader-&gt;output();
+</code></pre>
+
+<p>The output method can take an optional argument <code>$filename</code>. When present you
+can even omit most of the headers.</p>
+
+<pre><code class="language-php">$reader-&gt;output("name-for-your-file.csv");
+</code></pre>
+    </article>
+</main>
+
+<footer>
+    <span>&copy; Copyright The League of Extraordinary Packages.</span>
+    <span>Site design by <a href="http://reinink.ca">Jonathan Reinink</a>.</span>
+    <span>Powered by <a href="https://sculpin.io">Sculpin</a>.</span>
+</footer>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="/themes/thephpleague/thephpleague.github.com/js/scripts.js"></script>
+<script src="/themes/thephpleague/thephpleague.github.com/js/prism.js"></script>
+
+    <script>
+        (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
+        function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
+        e=o.createElement(i);r=o.getElementsByTagName(i)[0];
+        e.src='//www.google-analytics.com/analytics.js';
+        r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
+        ga('create','UA-46050814-6');ga('send','pageview');
+    </script>
+
+</body>
+</html>
